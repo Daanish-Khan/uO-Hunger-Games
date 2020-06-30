@@ -1,0 +1,1 @@
+worker: java -jar target/uo-hunger-games-1.3-jar-with-dependencies.jar

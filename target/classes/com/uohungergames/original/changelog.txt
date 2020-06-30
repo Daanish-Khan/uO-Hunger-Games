@@ -1,0 +1,42 @@
+HG Bot Updates:
+
+v1.4
+* `hg!viewevent` has been merged with `hg!me`. Use `hg!me` to view events.
+* Updated profile readability
+* Various bugfixes
+
++ Added feedback command. Usage: `hg!addideas idea`
++ Added death event to profile
++ Added number of kills to profile
++ Look out for Howie's ghost...
++ New gamemode improvements
++ **Bot is now 24/7!**
+
+v1.3
+* Fixed bug where game would refuse to start again after error
+* Fixed bug where day 1 would include bloodbath and day events instead of just bloodbath
+* Fixed formatting bug
+* Reduced number of pings lol
+* Fixed bug with autofill
+* Fixed bug where Tributes role wouldn't be added
+
++ Added timer functionality to `hg!start` to set an optional delay before starting the game
++ Added autofill function if players are less than 24
++ Added feast events
+
+v1.2
+* Fixed bug in `hg!addevent` where incorrect player would die
+* Fixed bug where `hg!viewplayer` would display Player1 dying no matter what
+* Fixed bug where emoji wouldn't display properly
+* Fixed bug where some events would kill the wrong player/not kill at all
+* Fixed bug where commas couldn't be used in file events
+
++ Gave Tributes role to anyone who uses `hg!join`
++ Endlist is sorted by order of death, not kills
++ Added placements in endlist
++ Added more events!!!!!111!one (Total of 411 events)
++ Improved readability of killfeed
++ Added functionality where typing a command after `hg!help` displays usage and examples. FORMAT: `hg!help [join/edit/addevent/delete]`
++ Added changelog command (This one!)
++ Players can now add **two** events!! One kill event, and one deathless event.
+
