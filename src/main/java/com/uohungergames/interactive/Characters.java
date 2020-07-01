@@ -1,4 +1,5 @@
 package com.uohungergames.interactive;
+
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -10,14 +11,21 @@ public class Characters extends Player {
 	private Player[] characterControllers = new Player[3];
 	private ArrayList<String> items;
 
-	private int map[][] = new int[50][50];
+	private int map[][];
 	private int[] position = new int[2];
 
 	private int atk;
 	private int def;
 	private int cool;
 
+	private Weapons wep;
+	private Armor armor;
+
 	private int district;
+
+	private boolean encounterEnemy;
+	private boolean encounterTreasure;
+	private boolean encounterPlayer;
 
 	public Characters(String url, String name, int district, Player[] characterControllers, Abilities ability) {
 		super(url, name, null, null, null);
@@ -29,10 +37,12 @@ public class Characters extends Player {
 
 		items = new ArrayList<String>();
 
-		atk = new Random().nextInt(25) + 5;
-		def = new Random().nextInt(25) + 5;
+		atk = new Random().nextInt(10) + 5;
+		def = new Random().nextInt(10) + 5;
 
 		cool = 0;
+
+		this.armor = Armor.NONE;
 
 	}
 
@@ -70,7 +80,7 @@ public class Characters extends Player {
 	}
 
 	public int getDef() {
-		return def;
+		return (int) Math.round(def * armor.getDef());
 	}
 
 	public int getCool() {
@@ -95,6 +105,50 @@ public class Characters extends Player {
 
 	public void setDistrict(int district) {
 		this.district = district;
+	}
+
+	public boolean getEncounterEnemy() {
+		return encounterEnemy;
+	}
+
+	public void setEncounterEnemy(boolean encounterEnemy) {
+		this.encounterEnemy = encounterEnemy;
+	}
+
+	public boolean getEncounterTreasure() {
+		return encounterTreasure;
+	}
+
+	public boolean getEncounterPlayer() {
+		return encounterPlayer;
+	}
+
+	public void setEncounterTreasure(boolean encounterTreasure) {
+		this.encounterTreasure = encounterTreasure;
+	}
+
+	public void initalizeMap(int mapSize) {
+		this.map = new int[mapSize][mapSize];
+	}
+
+	public void setEncounterPlayer(boolean encounterPlayer) {
+		this.encounterPlayer = encounterPlayer;
+	}
+
+	public void setWeapon(Weapons wep) {
+		this.wep = wep;
+	}
+
+	public Weapons getWeapon() {
+		return wep;
+	}
+
+	public void setArmor(Armor armor) {
+		this.armor = armor;
+	}
+
+	public Armor getArmor() {
+		return armor;
 	}
 
 }

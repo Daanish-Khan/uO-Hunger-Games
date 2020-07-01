@@ -19,7 +19,7 @@ public class Bot {
 				"NzI3MjU2NzQ1ODQ3NTU0MDU4.XvpOmg.46nxjvyyRkdrjDviSsI72-rRyOI" // Test Bot
 		};
 
-		JDA jda = new JDABuilder(tokens[0]).addEventListeners(new Listener(hgCommands, ihgCommands)).build();
+		JDA jda = new JDABuilder(tokens[1]).addEventListeners(new Listener(hgCommands, ihgCommands)).build();
 		jda.getPresence().setActivity(Activity.playing("hg!help"));
 
 	}

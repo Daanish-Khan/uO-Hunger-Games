@@ -6,7 +6,6 @@ import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +38,6 @@ public class InteractiveHGCommands extends Commands {
 
 	public void test(MessageReceivedEvent event) {
 
-		deleteLockedChannels(event);
 		createCharacterList();
 		createLockedChannels(event);
 		generateMap(500);
@@ -224,7 +222,7 @@ public class InteractiveHGCommands extends Commands {
 			int cool = c.getCool();
 
 			// Set font
-			Font f = Font.createFont(Font.TRUETYPE_FONT, new File("ARCADECLASSIC.TTF"));
+			Font f = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("ARCADECLASSIC.TTF"));
 			int textHeight = 19;
 
 			// Set colors
@@ -235,7 +233,7 @@ public class InteractiveHGCommands extends Commands {
 			Color coolText = Color.decode("#332464");
 
 			// Read image
-			BufferedImage blankStats = ImageIO.read(new File("stats.png"));
+			BufferedImage blankStats = ImageIO.read(getClass().getResourceAsStream("stats.png"));
 			BufferedImage modStats = new BufferedImage(blankStats.getWidth(), blankStats.getHeight(),
 					BufferedImage.TYPE_INT_ARGB);
 
@@ -290,7 +288,7 @@ public class InteractiveHGCommands extends Commands {
 		event.getGuild().createCategory("Interactive HG").queue();
 
 		try {
-			Thread.sleep(500);
+			Thread.sleep(1500);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -309,9 +307,16 @@ public class InteractiveHGCommands extends Commands {
 				e.printStackTrace();
 			}
 
-			for (Player p : characterList.get(i).getCharacterControllers())
-				c.getTextChannels().get(i).createPermissionOverride(event.getGuild().getMemberById(p.getID()))
-						.setAllow(EnumSet.of(Permission.VIEW_CHANNEL)).queue();
+			for (Player p : characterList.get(i).getCharacterControllers()) {
+				try {
+					c.getTextChannels().get(i).createPermissionOverride(event.getGuild().getMemberById(p.getID()))
+							.setAllow(EnumSet.of(Permission.VIEW_CHANNEL)).queue();
+				} catch (IllegalStateException e) {
+
+					System.out.println("Player " + p.getName() + " already has perms");
+
+				}
+			}
 
 			c.getTextChannels().get(i)
 					.sendMessage(characterList.get(i).getCharacterControllers()[0].getUser() + ", "
@@ -339,7 +344,7 @@ public class InteractiveHGCommands extends Commands {
 			tc.delete().queue();
 
 		try {
-			Thread.sleep(500);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -548,6 +553,9 @@ public class InteractiveHGCommands extends Commands {
 
 		for (Characters c : characterList) {
 
+			// Initialize respective maps
+			c.initalizeMap(mapSize);
+
 			// Choose player position
 			do {
 				randx = new Random().nextInt(mapSize);
@@ -565,13 +573,13 @@ public class InteractiveHGCommands extends Commands {
 
 					if (posx < 0)
 						posx = 0;
-					else if (posx > 49)
-						posx = 49;
+					else if (posx > mapSize - 1)
+						posx = mapSize - 1;
 
 					if (posy < 0)
 						posy = 0;
-					else if (posy > 49)
-						posy = 49;
+					else if (posy > mapSize - 1)
+						posy = mapSize - 1;
 
 					c.setMapPosition(posx, posy);
 
@@ -583,7 +591,7 @@ public class InteractiveHGCommands extends Commands {
 
 	public void move(Characters c, int spaces, String dir) {
 
-		int[][] charMap = c.getMap();
+		int mapSize = c.getMap()[0].length;
 		int currentPosition[] = c.getPosition();
 		int nextPos[] = new int[2];
 
@@ -594,72 +602,163 @@ public class InteractiveHGCommands extends Commands {
 
 		for (int i = 0; i < spaces; i++) {
 
+			// Move in respective direction
 			switch (dir) {
 
 			case "N":
-				nextPos[0] = currentPosition[0] - 1 < 0 ? 0 : currentPosition[0] - 1; // y
-				nextPos[1] = currentPosition[1]; // x
-
-				encounterEnemy(nextPos, c);
-				encounterTreasure(nextPos, c);
-				encounterPlayer(nextPos, c);
-
-				c.setPosition(nextPos[1], nextPos[0]);
-				c.setMapPosition(nextPos[1], nextPos[0]);
+				nextPos[0] = currentPosition[1] - 1 <= 0 ? 0 : currentPosition[1] - 1; // y
+				nextPos[1] = currentPosition[0]; // x
 				break;
 			case "E":
-				nextPos[0] = currentPosition[0]; // y
-				nextPos[1] = currentPosition[1] + 1 > 49 ? 49 : currentPosition[1] + 1; // x
-
-				encounterEnemy(nextPos, c);
-				encounterTreasure(nextPos, c);
-				encounterPlayer(nextPos, c);
-
-				c.setPosition(nextPos[1], nextPos[0]);
-				c.setMapPosition(nextPos[1], nextPos[0]);
+				nextPos[0] = currentPosition[1]; // y
+				nextPos[1] = currentPosition[0] + 1 >= 49 ? 49 : currentPosition[0] + 1; // x
 				break;
 			case "S":
-				nextPos[0] = currentPosition[0] + 1 > 49 ? 49 : currentPosition[0] + 1; // y
-				nextPos[1] = currentPosition[1]; // x
-
-				encounterEnemy(nextPos, c);
-				encounterTreasure(nextPos, c);
-				encounterPlayer(nextPos, c);
-
-				c.setPosition(nextPos[1], nextPos[0]);
-				c.setMapPosition(nextPos[1], nextPos[0]);
+				nextPos[0] = currentPosition[1] + 1 >= 49 ? 49 : currentPosition[1] + 1; // y
+				nextPos[1] = currentPosition[0]; // x
 				break;
 			case "W":
-				nextPos[0] = currentPosition[0]; // y
-				nextPos[1] = currentPosition[1] - 1 < 0 ? 0 : currentPosition[1] - 1; // x
-
-				encounterEnemy(nextPos, c);
-				encounterTreasure(nextPos, c);
-				encounterPlayer(nextPos, c);
-
-				c.setPosition(nextPos[1], nextPos[0]);
-				c.setMapPosition(nextPos[1], nextPos[0]);
+				nextPos[0] = currentPosition[1]; // y
+				nextPos[1] = currentPosition[0] - 1 <= 0 ? 0 : currentPosition[0] - 1; // x
 				break;
 
 			}
+
+			// Check if on the way, the player encounters an enemy, player, or loot box
+			c.setEncounterEnemy(checkEncounterEnemy(nextPos, c));
+			c.setEncounterTreasure(checkEncounterTreasure(nextPos, c));
+			c.setEncounterPlayer(checkEncounterPlayer(nextPos, c));
+
+			// Stop movement if player will occupy the same space
+			if (characterMap[nextPos[0]][nextPos[1]] != null)
+				break;
+
+			c.setPosition(nextPos[1], nextPos[0]);
+
+			// Update viewdistance
+			for (int x = 0; x < 5; x++)
+				for (int y = 0; y < 5; y++) {
+
+					int posx = (nextPos[1] - 2) + x;
+					int posy = (nextPos[0] - 2) + y;
+
+					if (posx < 0)
+						posx = 0;
+					else if (posx > mapSize - 1)
+						posx = mapSize - 1;
+
+					if (posy < 0)
+						posy = 0;
+					else if (posy > mapSize - 1)
+						posy = mapSize - 1;
+
+					c.setMapPosition(posx, posy);
+
+				}
 
 		}
 
 	}
 
-	private void encounterPlayer(int[] nextPos, Characters c) {
-		// TODO Auto-generated method stub
+	private boolean checkEncounterPlayer(int[] nextPos, Characters c) {
+
+		int mapSize = c.getMap()[0].length;
+
+		// Check if there is player in character viewdistance
+		for (int x = 0; x < 5; x++)
+			for (int y = 0; y < 5; y++) {
+
+				int posx = (nextPos[1] - 2) + x;
+				int posy = (nextPos[0] - 2) + y;
+
+				if (posx < 0)
+					posx = 0;
+				else if (posx > mapSize - 1)
+					posx = mapSize - 1;
+
+				if (posy < 0)
+					posy = 0;
+				else if (posy > mapSize - 1)
+					posy = mapSize - 1;
+
+				if (characterMap[posy][posx] != null)
+					return true;
+
+			}
+
+		return false;
 
 	}
 
-	private void encounterEnemy(int[] nextPos, Characters c) {
-		// TODO Auto-generated method stub
+	public void battleStep(Characters c1, Characters c2, String choice1, String choice2) {
+
+		int c1atk = c1.getAtk();
+		int c1def = c1.getDef();
+		Weapons c1wep = c1.getWeapon();
+
+		int c2atk = c2.getAtk();
+		int c2def = c2.getDef();
+		Weapons c2wep = c2.getWeapon();
+
+		// Calculate damage if either attacks
+		double c1damage = ((c2atk * c2wep.getAtk()) - c1def) < 0 ? 0 : ((c2atk * c2wep.getAtk()) - c1def);
+		double c2damage = ((c1atk * c1wep.getAtk()) - c2def) < 0 ? 0 : ((c1atk * c1wep.getAtk()) - c2def);
+
+		// Calculate damage bonus with armor
+		if (c1wep.getType().equals("Piercing"))
+			c1damage *= (c2.getArmor() == Armor.LIGHT) ? 1.3 : (c2.getArmor() == Armor.HEAVY) ? 0.7 : 1;
+		else if (c1wep.getType().equals("Bludgeoning"))
+			c1damage *= (c2.getArmor() == Armor.LIGHT) ? 0.7 : (c2.getArmor() == Armor.HEAVY) ? 1.3 : 1;
+
+		if (c2wep.getType().equals("Piercing"))
+			c2damage *= (c1.getArmor() == Armor.LIGHT) ? 1.3 : (c1.getArmor() == Armor.HEAVY) ? 0.7 : 1;
+		else if (c2wep.getType().equals("Bludgeoning"))
+			c2damage *= (c1.getArmor() == Armor.LIGHT) ? 0.7 : (c1.getArmor() == Armor.HEAVY) ? 1.3 : 1;
+
+		switch (choice1) {
+
+		case "attack":
+
+			if (choice2.equals("attack")) {
+
+				// Both take damage
+				c1.setHP(c1.getHP() - (int) Math.round(c1damage));
+				c2.setHP(c2.getHP() - (int) Math.round(c2damage));
+
+			} else if (choice2.equals("defend")) {
+
+				c2.setHP(c2.getHP() - (int) Math.round(
+						(c1atk * c1wep.getAtk() - (c2def * 1.5)) < 0 ? 0 : (c1atk * c1wep.getAtk() - (c2def * 1.5))));
+
+			}
+
+			// ------------------ADD ABILITY--------------------
+
+			break;
+
+		case "defend":
+
+			if (choice2.equals("attack")) {
+
+				c1.setHP(c1.getHP() - (int) Math.round(
+						(c2atk * c2wep.getAtk() - (c1def * 1.5)) < 0 ? 0 : (c2atk * c2wep.getAtk() - (c1def * 1.5))));
+
+			}
+
+			// ---------------------ADD ABILITY-----------------
+
+			break;
+
+		}
 
 	}
 
-	private void encounterTreasure(int[] nextPos, Characters c) {
-		// TODO Auto-generated method stub
+	private boolean checkEncounterEnemy(int[] nextPos, Characters c) {
+		return enemyMap[nextPos[0]][nextPos[1]] == 1;
+	}
 
+	private boolean checkEncounterTreasure(int[] nextPos, Characters c) {
+		return treasureMap[nextPos[0]][nextPos[1]] == 1;
 	}
 
 	private int barLength(int stat) {
