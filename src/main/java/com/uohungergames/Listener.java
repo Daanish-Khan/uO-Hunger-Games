@@ -43,6 +43,11 @@ public class Listener extends ListenerAdapter {
 			event.getMessage().addReaction("U+2705").queue();
 		}
 
+		if (event.getMessage().getContentRaw().split(" ")[0].equals("ihg!map")) {
+			ihgCommands.viewMap(event);
+			event.getMessage().addReaction("U+2705").queue();
+		}
+
 		// Add ideas
 		if (event.getMessage().getContentRaw().split(" ")[0].equals("hg!addidea")) {
 

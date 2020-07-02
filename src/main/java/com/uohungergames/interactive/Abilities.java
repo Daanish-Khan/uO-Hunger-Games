@@ -12,7 +12,7 @@ public enum Abilities {
 	PSY("Psychic", "Increased attack range. Able to utilize surroundings as projectiles."),
 	STRENGTH("Strength", "Increased attack. Able to throw weapons at an enemy."),
 	HEARING("Echolocation", "Increased detection range, and last enemy location heard will be shown on the map."),
-	STEAL("Theif", "Steal enemies ability upon killing them. Can only have one at a time.");
+	STEAL("Thief", "Steal enemies ability upon killing them. Can only have one at a time.");
 
 	private String name;
 	private String desc;

@@ -14,8 +14,11 @@ public class Characters extends Player {
 	private int map[][];
 	private int[] position = new int[2];
 
+	private int level;
+
 	private int atk;
 	private int def;
+	private int spd;
 	private int cool;
 
 	private Weapons wep;
@@ -27,6 +30,9 @@ public class Characters extends Player {
 	private boolean encounterTreasure;
 	private boolean encounterPlayer;
 
+	private boolean hasDefended;
+	private boolean isPrepared;
+
 	public Characters(String url, String name, int district, Player[] characterControllers, Abilities ability) {
 		super(url, name, null, null, null);
 
@@ -37,8 +43,11 @@ public class Characters extends Player {
 
 		items = new ArrayList<String>();
 
-		atk = new Random().nextInt(10) + 5;
-		def = new Random().nextInt(10) + 5;
+		level = 1;
+
+		atk = new Random().nextInt(11) + 5;
+		def = new Random().nextInt(11) + 5;
+		spd = new Random().nextInt(11) + 5;
 
 		cool = 0;
 
@@ -76,7 +85,10 @@ public class Characters extends Player {
 	}
 
 	public int getAtk() {
-		return atk;
+		if (ability == Abilities.STRENGTH)
+			return (int) Math.round(atk * (1 + (0.3333 * level)));
+		else
+			return atk;
 	}
 
 	public int getDef() {
@@ -85,6 +97,17 @@ public class Characters extends Player {
 
 	public int getCool() {
 		return cool;
+	}
+
+	public int getSpd() {
+		if (ability == Abilities.SPEED)
+			return (int) Math.round(spd * (1 + (0.3333 * level)));
+		else
+			return spd;
+	}
+
+	public void setSpd(int spd) {
+		this.spd = spd;
 	}
 
 	public void setAtk(int atk) {
@@ -149,6 +172,30 @@ public class Characters extends Player {
 
 	public Armor getArmor() {
 		return armor;
+	}
+
+	public boolean getHasDefended() {
+		return hasDefended;
+	}
+
+	public void setHasDefended(boolean hasDefended) {
+		this.hasDefended = hasDefended;
+	}
+
+	public boolean getPrepared() {
+		return isPrepared;
+	}
+
+	public void setPrepared(boolean isPrepared) {
+		this.isPrepared = isPrepared;
+	}
+
+	public void incrementLevel() {
+		this.level++;
+	}
+
+	public int getLevel() {
+		return level;
 	}
 
 }

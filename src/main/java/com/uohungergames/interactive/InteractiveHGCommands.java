@@ -36,11 +36,19 @@ public class InteractiveHGCommands extends Commands {
 	private int[][] enemyMap;
 	private Characters[][] characterMap;
 
+	private static final double PREPARE_MOD = 1.4;
+	private static final double COUNTER_MOD = 1.2;
+	private static final double DEFEND_MOD = 1.5;
+
+	private static final double ARMOR_WEAK_MOD = 1.3;
+	private static final double ARMOR_STRONG_MOD = 0.7;
+
 	public void test(MessageReceivedEvent event) {
 
 		createCharacterList();
 		createLockedChannels(event);
 		generateMap(500);
+		viewMap(event);
 
 	}
 
@@ -203,6 +211,25 @@ public class InteractiveHGCommands extends Commands {
 		eb.setImage("attachment://charMap.png");
 
 		event.getChannel().sendFile(s.toByteArray(), "charMap.png").embed(eb.build()).queue();
+
+	}
+
+	public void viewMap(MessageReceivedEvent event) {
+
+		EmbedBuilder eb = new EmbedBuilder();
+		eb.setColor(Color.cyan);
+
+		ByteArrayOutputStream s = new ByteArrayOutputStream();
+
+		try {
+			ImageIO.write(generateMapImage(false), "png", s);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		eb.setImage("attachment://map.png");
+
+		event.getChannel().sendFile(s.toByteArray(), "map.png").embed(eb.build()).queue();
 
 	}
 
@@ -692,64 +719,342 @@ public class InteractiveHGCommands extends Commands {
 
 	public void battleStep(Characters c1, Characters c2, String choice1, String choice2) {
 
-		int c1atk = c1.getAtk();
-		int c1def = c1.getDef();
 		Weapons c1wep = c1.getWeapon();
 
-		int c2atk = c2.getAtk();
-		int c2def = c2.getDef();
+		double c1atk = (c1.getPrepared() && choice1.equals("attack")) ? c1.getAtk() * PREPARE_MOD : c1.getAtk(); // Calculate
+																													// damage
+																													// if
+																													// player
+																													// prepared
+																													// last
+																													// turn
+		c1atk = (c1.getHasDefended() && choice1.equals("attack")) ? c1atk * COUNTER_MOD : c1atk; // Calculate damage if
+																									// player defended
+																									// last turn
+		c1atk = c1atk * c1wep.getAtk();
+
+		double c1def = (c1.getPrepared() && choice1.equals("defend")) ? c1.getDef() * PREPARE_MOD : c1.getDef(); // Calculate
+																													// defense
+																													// if
+																													// player
+																													// prepared
+																													// last
+																													// turn
+		c1def = (c1.getHasDefended() && choice1.equals("defend")) ? 0 : c1def; // If player already defended last turn,
+																				// defense fails
+		c1def = (choice1.equals("defend")) ? c1def * DEFEND_MOD : c1def; // Defense modifier
+
 		Weapons c2wep = c2.getWeapon();
 
+		double c2atk = (c2.getPrepared() && choice2.equals("attack")) ? c2.getAtk() * PREPARE_MOD : c2.getAtk(); // Calculate
+																													// damage
+																													// if
+																													// player
+																													// prepared
+																													// last
+																													// turn
+		c2atk = (c2.getHasDefended() && choice2.equals("attack")) ? c2atk * COUNTER_MOD : c2atk; // Calculate damage if
+																									// player defended
+																									// last turn
+		c2atk = c2atk * c2wep.getAtk();
+
+		double c2def = (c2.getPrepared() && choice2.equals("defend")) ? c2.getDef() * PREPARE_MOD : c2.getDef(); // Calculate
+																													// defense
+																													// if
+																													// player
+																													// prepared
+																													// last
+																													// turn
+		c2def = (c2.getHasDefended() && choice2.equals("defend")) ? 0 : c2def; // If player already defended last turn,
+																				// defense fails
+		c2def = (choice2.equals("defend")) ? c2def * DEFEND_MOD : c2def; // Defense modifier
+
 		// Calculate damage if either attacks
-		double c1damage = ((c2atk * c2wep.getAtk()) - c1def) < 0 ? 0 : ((c2atk * c2wep.getAtk()) - c1def);
-		double c2damage = ((c1atk * c1wep.getAtk()) - c2def) < 0 ? 0 : ((c1atk * c1wep.getAtk()) - c2def);
+		double c1damage = c2atk - c1def;
+		double c2damage = c1atk - c2def;
 
 		// Calculate damage bonus with armor
-		if (c1wep.getType().equals("Piercing"))
-			c1damage *= (c2.getArmor() == Armor.LIGHT) ? 1.3 : (c2.getArmor() == Armor.HEAVY) ? 0.7 : 1;
-		else if (c1wep.getType().equals("Bludgeoning"))
-			c1damage *= (c2.getArmor() == Armor.LIGHT) ? 0.7 : (c2.getArmor() == Armor.HEAVY) ? 1.3 : 1;
-
 		if (c2wep.getType().equals("Piercing"))
-			c2damage *= (c1.getArmor() == Armor.LIGHT) ? 1.3 : (c1.getArmor() == Armor.HEAVY) ? 0.7 : 1;
+			c1damage *= (c1.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (c1.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
 		else if (c2wep.getType().equals("Bludgeoning"))
-			c2damage *= (c1.getArmor() == Armor.LIGHT) ? 0.7 : (c1.getArmor() == Armor.HEAVY) ? 1.3 : 1;
+			c1damage *= (c1.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (c1.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
+
+		if (c1wep.getType().equals("Piercing"))
+			c2damage *= (c2.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (c2.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
+		else if (c1wep.getType().equals("Bludgeoning"))
+			c2damage *= (c2.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (c2.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
 
 		switch (choice1) {
 
 		case "attack":
 
+			c1.setHasDefended(false);
+			c1.setPrepared(false);
+
 			if (choice2.equals("attack")) {
 
-				// Both take damage
-				c1.setHP(c1.getHP() - (int) Math.round(c1damage));
-				c2.setHP(c2.getHP() - (int) Math.round(c2damage));
+				c2.setHasDefended(false);
+				c2.setPrepared(false);
+
+				if (c1.getSpd() > c2.getSpd()) {
+
+					c2.setHP((int) Math.round(c2.getHP() - c2damage < 0 ? 0 : c2.getHP() - c2damage));
+
+					if (c2.getHP() == 0)
+						break;
+					else
+						c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+				} else if (c2.getSpd() > c1.getSpd()) {
+
+					c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+					if (c1.getHP() == 0)
+						break;
+					else
+						c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
+
+				} else {
+
+					c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+					c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
+
+				}
 
 			} else if (choice2.equals("defend")) {
 
-				c2.setHP(c2.getHP() - (int) Math.round(
-						(c1atk * c1wep.getAtk() - (c2def * 1.5)) < 0 ? 0 : (c1atk * c1wep.getAtk() - (c2def * 1.5))));
+				c2.setHasDefended(true);
+				c2.setPrepared(false);
+				c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
+
+			} else if (choice2.equals("prepare")) {
+
+				c2.setPrepared(true);
+				c2.setHasDefended(false);
+				c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
 
 			}
-
-			// ------------------ADD ABILITY--------------------
 
 			break;
 
 		case "defend":
 
+			c1.setPrepared(false);
+
 			if (choice2.equals("attack")) {
 
-				c1.setHP(c1.getHP() - (int) Math.round(
-						(c2atk * c2wep.getAtk() - (c1def * 1.5)) < 0 ? 0 : (c2atk * c2wep.getAtk() - (c1def * 1.5))));
+				c1.setHasDefended(true);
+
+				c2.setHasDefended(false);
+				c2.setPrepared(false);
+
+				c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+			} else if (choice2.equals("prepare")) {
+
+				c1.setHasDefended(false);
+
+				c2.setHasDefended(false);
+				c2.setPrepared(true);
 
 			}
 
-			// ---------------------ADD ABILITY-----------------
+			break;
+
+		case "prepare":
+
+			c1.setHasDefended(false);
+			c1.setPrepared(true);
+
+			if (choice2.equals("attack")) {
+
+				c2.setHasDefended(false);
+				c2.setPrepared(false);
+
+				c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+			} else if (choice2.equals("prepare")) {
+
+				c2.setHasDefended(false);
+				c2.setPrepared(true);
+
+			}
 
 			break;
 
 		}
+
+		// ---------------------- ADD ABILITIES ----------------------
+
+	}
+
+	public void battleStep(Characters c, Enemy e, String choice) {
+
+		Weapons cWep = c.getWeapon();
+
+		double cAtk = (c.getPrepared() && choice.equals("attack")) ? c.getAtk() * PREPARE_MOD : c.getAtk(); // Calculate
+																											// damage if
+																											// player
+																											// prepared
+																											// last turn
+		cAtk = (c.getHasDefended() && choice.equals("attack")) ? cAtk * COUNTER_MOD : cAtk; // Calculate damage if
+																							// player defended last turn
+		cAtk = cAtk * cWep.getAtk();
+
+		double cDef = (c.getPrepared() && choice.equals("defend")) ? c.getDef() * PREPARE_MOD : c.getDef(); // Calculate
+																											// defense
+																											// if player
+																											// prepared
+																											// last turn
+		cDef = (c.getHasDefended() && choice.equals("defend")) ? 0 : cDef; // If player already defended last turn,
+																			// defense fails
+		cDef = (choice.equals("defend")) ? cDef * DEFEND_MOD : cDef; // Defense modifier
+
+		Weapons eWep = e.getWeapon();
+
+		int enemyChoice = new Random().nextInt(3);
+
+		double eAtk = (e.getPrepared() && enemyChoice == 0) ? e.getAtk() * PREPARE_MOD : e.getAtk(); // Calculate damage
+																										// if player
+																										// prepared last
+																										// turn
+		eAtk = (e.getHasDefended() && enemyChoice == 0) ? eAtk * COUNTER_MOD : eAtk; // Calculate damage if player
+																						// defended last turn
+		eAtk = eAtk * eWep.getAtk();
+
+		double eDef = (e.getPrepared() && enemyChoice == 1) ? e.getDef() * PREPARE_MOD : e.getDef(); // Calculate
+																										// defense if
+																										// player
+																										// prepared last
+																										// turn
+		eDef = (e.getHasDefended() && enemyChoice == 1) ? 0 : eDef; // If player already defended last turn, defense
+																	// fails
+		eDef = (enemyChoice == 1) ? eDef * DEFEND_MOD : eDef; // Defense modifier
+
+		// Calculate damage if either attacks
+		double cdamage = eAtk - cDef;
+		double edamage = cAtk - eDef;
+
+		// Calculate damage bonus with armor
+		if (eWep.getType().equals("Piercing"))
+			cdamage *= (c.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (c.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
+		else if (eWep.getType().equals("Bludgeoning"))
+			cdamage *= (c.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (c.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
+
+		if (cWep.getType().equals("Piercing"))
+			edamage *= (e.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (e.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
+		else if (cWep.getType().equals("Bludgeoning"))
+			edamage *= (e.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (e.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
+
+		switch (choice) {
+
+		case "attack":
+
+			c.setHasDefended(false);
+			c.setPrepared(false);
+
+			if (enemyChoice == 0) {
+
+				e.setHasDefended(false);
+				e.setPrepared(false);
+
+				if (c.getSpd() > e.getSpd()) {
+
+					e.setHP((int) Math.round(e.getHP() - edamage < 0 ? 0 : e.getHP() - edamage));
+
+					if (e.getHP() == 0)
+						break;
+					else
+						c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+				} else if (e.getSpd() > c.getSpd()) {
+
+					c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+					if (c.getHP() == 0)
+						break;
+					else
+						e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+				} else {
+
+					c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+					e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+				}
+
+			} else if (enemyChoice == 1) {
+
+				e.setHasDefended(true);
+				e.setPrepared(false);
+				e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+			} else if (enemyChoice == 2) {
+
+				e.setPrepared(true);
+				e.setHasDefended(false);
+				e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+			}
+
+			break;
+
+		case "defend":
+
+			c.setPrepared(false);
+
+			if (enemyChoice == 0) {
+
+				c.setHasDefended(true);
+
+				e.setHasDefended(false);
+				e.setPrepared(false);
+
+				c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+			} else if (enemyChoice == 2) {
+
+				c.setHasDefended(false);
+
+				e.setHasDefended(false);
+				e.setPrepared(true);
+
+			}
+
+			break;
+
+		case "prepare":
+
+			c.setHasDefended(false);
+			c.setPrepared(true);
+
+			if (enemyChoice == 0) {
+
+				e.setHasDefended(false);
+				e.setPrepared(false);
+
+				c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+			} else if (enemyChoice == 2) {
+
+				e.setHasDefended(false);
+				e.setPrepared(true);
+
+			}
+
+			break;
+
+		}
+
+		// ---------------------- ADD ABILITIES ----------------------
 
 	}
 

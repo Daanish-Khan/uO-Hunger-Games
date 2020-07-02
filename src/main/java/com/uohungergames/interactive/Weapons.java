@@ -6,7 +6,7 @@ public enum Weapons {
 	SWORD("Sword", "A sword forged from iron. Sharp edge!", "Slashing", 1.3, true),
 	KNIFE("Knife", "Makes a mean steak.", "Piercing", 1.1, true),
 	SPEAR("Spear", "Did anyone say shish kebab?", "Piercing", 1.2, true),
-	SHEILD("Sheild", "You can *try* to throw this.", "None", 0, false),
+	SHIELD("Shield", "You can *try* to throw this.", "None", 0, false),
 	BOW("Bow", "Legolas, that you?", "Piercing", 1.15, false),
 	GAUNTLETS("Gauntlets", "Up close and personal.", "Bludgeoning", 1.3, false),
 	ROCK("Rock", "Kinda heavy.", "Bludgeoning", 1.05, true),
