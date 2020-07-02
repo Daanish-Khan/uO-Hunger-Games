@@ -294,7 +294,7 @@ public class InteractiveHGCommands extends Commands {
 			g2d.drawString(String.valueOf(hp), fontPlacement(g2d, hp), 6 + textHeight);
 			g2d.drawString(String.valueOf(atk), fontPlacement(g2d, atk), 48 + textHeight);
 			g2d.drawString(String.valueOf(def), fontPlacement(g2d, def), 90 + textHeight);
-			g2d.drawString(String.valueOf(spd), fontPlacement(g2d, def), 132 + textHeight);
+			g2d.drawString(String.valueOf(spd), fontPlacement(g2d, spd), 132 + textHeight);
 
 			g2d.setColor(coolText);
 			g2d.drawString(String.valueOf(cool), fontPlacement(g2d, cool), 174 + textHeight);
