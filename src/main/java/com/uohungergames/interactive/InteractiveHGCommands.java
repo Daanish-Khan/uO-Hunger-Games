@@ -172,7 +172,7 @@ public class InteractiveHGCommands extends Commands {
 
 		eb.setColor(Color.CYAN);
 
-		eb.addField("HP: ", String.valueOf(character.getHP()), true);
+		eb.addField("Level: ", String.valueOf(character.getLevel()), true);
 		eb.addField("Items: ", character.getItemList().toString(), true);
 
 		eb.addField("Ability: ", character.getAbility().toString(), true);
@@ -246,6 +246,7 @@ public class InteractiveHGCommands extends Commands {
 			int hp = c.getHP();
 			int atk = c.getAtk();
 			int def = c.getDef();
+			int spd = c.getSpd();
 			int cool = c.getCool();
 
 			// Set font
@@ -272,28 +273,31 @@ public class InteractiveHGCommands extends Commands {
 
 			// Draw empty bars
 			g2d.setColor(emptyBar);
-			g2d.fillRoundRect(116, 6, width, 21, arcWidth, arcHeight);
-			g2d.fillRoundRect(116, 48, width, 21, arcWidth, arcHeight);
-			g2d.fillRoundRect(116, 90, width, 21, arcWidth, arcHeight);
-			g2d.fillRoundRect(116, 132, width, 21, arcWidth, arcHeight);
+			g2d.fillRoundRect(116, 6, width, 21, arcWidth, arcHeight); // hp
+			g2d.fillRoundRect(116, 48, width, 21, arcWidth, arcHeight); // atk
+			g2d.fillRoundRect(116, 90, width, 21, arcWidth, arcHeight); // def
+			g2d.fillRoundRect(116, 132, width, 21, arcWidth, arcHeight); // spd
+			g2d.fillRoundRect(116, 174, width, 21, arcWidth, arcHeight); // cooldown
 
 			// Draw filled bars
 			g2d.setColor(fillBar);
 			g2d.fillRoundRect(116, 6, barLength(hp), 21, arcWidth, arcHeight);
 			g2d.fillRoundRect(116, 48, barLength(atk), 21, arcWidth, arcHeight);
 			g2d.fillRoundRect(116, 90, barLength(def), 21, arcWidth, arcHeight);
+			g2d.fillRoundRect(116, 132, barLength(spd), 21, arcWidth, arcHeight);
 
 			g2d.setColor(coolBar);
-			g2d.fillRoundRect(116, 132, barLength(cool), 21, arcWidth, arcHeight);
+			g2d.fillRoundRect(116, 174, barLength(cool), 21, arcWidth, arcHeight);
 
 			// Draw stat numbers
 			g2d.setColor(text);
 			g2d.drawString(String.valueOf(hp), fontPlacement(g2d, hp), 6 + textHeight);
 			g2d.drawString(String.valueOf(atk), fontPlacement(g2d, atk), 48 + textHeight);
 			g2d.drawString(String.valueOf(def), fontPlacement(g2d, def), 90 + textHeight);
+			g2d.drawString(String.valueOf(spd), fontPlacement(g2d, def), 132 + textHeight);
 
 			g2d.setColor(coolText);
-			g2d.drawString(String.valueOf(cool), fontPlacement(g2d, cool), 132 + textHeight);
+			g2d.drawString(String.valueOf(cool), fontPlacement(g2d, cool), 174 + textHeight);
 
 			g2d.dispose();
 
