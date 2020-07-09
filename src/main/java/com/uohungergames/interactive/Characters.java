@@ -21,6 +21,8 @@ public class Characters extends Player {
 	private int spd;
 	private int cool;
 
+	private boolean inAbility;
+
 	private Weapons wep;
 	private Armor armor;
 
@@ -196,6 +198,14 @@ public class Characters extends Player {
 
 	public int getLevel() {
 		return level;
+	}
+
+	public boolean isInAbility() {
+		return inAbility;
+	}
+
+	public void setInAbility(boolean inAbility) {
+		this.inAbility = inAbility;
 	}
 
 }

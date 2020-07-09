@@ -4,7 +4,6 @@ public enum Abilities {
 
 	INVISIBILITY("Invisibility", "Other players are unable to see you for 3 turns. Stops on attack."),
 	FLIGHT("Flight", "Allows you to fly for 3 turns over rivers and mountains. Gives increased move range."),
-	ACCURACY("Precision", "Greater accuracy with ranged weapons."),
 	SPEED("Speed", "Greatly increased move range. Allows to escape battles more easily."),
 	TIME("Za Warudo", "Stops time and prevents the enemy from attacking/defending for 1 turn."),
 	HEAL("Medicine", "Heals yourself."), REPAIR("Mechanic", "Able to repair weapons with decreased item cost."),

@@ -712,8 +712,11 @@ public class InteractiveHGCommands extends Commands {
 				else if (posy > mapSize - 1)
 					posy = mapSize - 1;
 
-				if (characterMap[posy][posx] != null)
-					return true;
+				if (characterMap[posy][posx] != null) {
+					if (characterMap[posy][posx].isInAbility() != true
+							|| characterMap[posy][posx].getAbility() != Abilities.INVISIBILITY)
+						return true;
+				}
 
 			}
 
@@ -723,54 +726,36 @@ public class InteractiveHGCommands extends Commands {
 
 	public void battleStep(Characters c1, Characters c2, String choice1, String choice2) {
 
+		// Get weapons
 		Weapons c1wep = c1.getWeapon();
-
-		double c1atk = (c1.getPrepared() && choice1.equals("attack")) ? c1.getAtk() * PREPARE_MOD : c1.getAtk(); // Calculate
-																													// damage
-																													// if
-																													// player
-																													// prepared
-																													// last
-																													// turn
-		c1atk = (c1.getHasDefended() && choice1.equals("attack")) ? c1atk * COUNTER_MOD : c1atk; // Calculate damage if
-																									// player defended
-																									// last turn
-		c1atk = c1atk * c1wep.getAtk();
-
-		double c1def = (c1.getPrepared() && choice1.equals("defend")) ? c1.getDef() * PREPARE_MOD : c1.getDef(); // Calculate
-																													// defense
-																													// if
-																													// player
-																													// prepared
-																													// last
-																													// turn
-		c1def = (c1.getHasDefended() && choice1.equals("defend")) ? 0 : c1def; // If player already defended last turn,
-																				// defense fails
-		c1def = (choice1.equals("defend")) ? c1def * DEFEND_MOD : c1def; // Defense modifier
-
 		Weapons c2wep = c2.getWeapon();
 
-		double c2atk = (c2.getPrepared() && choice2.equals("attack")) ? c2.getAtk() * PREPARE_MOD : c2.getAtk(); // Calculate
-																													// damage
-																													// if
-																													// player
-																													// prepared
-																													// last
-																													// turn
-		c2atk = (c2.getHasDefended() && choice2.equals("attack")) ? c2atk * COUNTER_MOD : c2atk; // Calculate damage if
-																									// player defended
-																									// last turn
+		// Attack prepare
+		double c1atk = (c1.getPrepared() && choice1.equals("attack")) ? c1.getAtk() * PREPARE_MOD : c1.getAtk();
+
+		// Calculate damage if player defended
+		c1atk = (c1.getHasDefended() && choice1.equals("attack")) ? c1atk * COUNTER_MOD : c1atk;
+		c1atk = c1atk * c1wep.getAtk();
+
+		// Defense prepare
+		double c1def = (c1.getPrepared() && choice1.equals("defend")) ? c1.getDef() * PREPARE_MOD : c1.getDef();
+
+		// Defense fail
+		c1def = (c1.getHasDefended() && choice1.equals("defend")) ? 0 : c1def;
+		c1def = (choice1.equals("defend")) ? c1def * DEFEND_MOD : c1def; // Defense modifier
+
+		// Attack prepare
+		double c2atk = (c2.getPrepared() && choice2.equals("attack")) ? c2.getAtk() * PREPARE_MOD : c2.getAtk();
+
+		// Defend damage
+		c2atk = (c2.getHasDefended() && choice2.equals("attack")) ? c2atk * COUNTER_MOD : c2atk;
 		c2atk = c2atk * c2wep.getAtk();
 
-		double c2def = (c2.getPrepared() && choice2.equals("defend")) ? c2.getDef() * PREPARE_MOD : c2.getDef(); // Calculate
-																													// defense
-																													// if
-																													// player
-																													// prepared
-																													// last
-																													// turn
-		c2def = (c2.getHasDefended() && choice2.equals("defend")) ? 0 : c2def; // If player already defended last turn,
-																				// defense fails
+		// Defense prepare
+		double c2def = (c2.getPrepared() && choice2.equals("defend")) ? c2.getDef() * PREPARE_MOD : c2.getDef();
+
+		// Defense fail
+		c2def = (c2.getHasDefended() && choice2.equals("defend")) ? 0 : c2def;
 		c2def = (choice2.equals("defend")) ? c2def * DEFEND_MOD : c2def; // Defense modifier
 
 		// Calculate damage if either attacks
@@ -804,6 +789,7 @@ public class InteractiveHGCommands extends Commands {
 				c2.setHasDefended(false);
 				c2.setPrepared(false);
 
+				// Compare speeds and apply damage to the slower one
 				if (c1.getSpd() > c2.getSpd()) {
 
 					c2.setHP((int) Math.round(c2.getHP() - c2damage < 0 ? 0 : c2.getHP() - c2damage));
@@ -898,45 +884,68 @@ public class InteractiveHGCommands extends Commands {
 
 	public void battleStep(Characters c, Enemy e, String choice) {
 
+		int randNum = new Random().nextInt(101);
+		int enemyChoice;
+
+		// Calculate likelyhood of attacking/defending
+		double initialAttack = 72 - 0.2 * c.getHP();
+		double initialDefend = 90 - initialAttack;
+
+		int finalDefend = (int) Math.round((108 - initialAttack) - (0.2 * e.getHP()));
+		int finalAttack = (int) Math.round(initialAttack - (finalDefend - initialDefend));
+
+		if (e.getPrepared())
+			randNum += 10;
+
+		// Choose enemy action based on hp levels
+		if ((randNum -= 10) < 0) {
+			enemyChoice = 2;
+		} else if ((randNum -= Math.min(finalDefend, finalAttack)) < 0) {
+
+			if (Math.min(finalDefend, finalAttack) == finalAttack)
+				enemyChoice = 0;
+			else
+				enemyChoice = 1;
+
+		} else {
+
+			if (Math.max(finalDefend, finalAttack) == finalAttack)
+				enemyChoice = 0;
+			else
+				enemyChoice = 1;
+
+		}
+
+		// Get weapons
 		Weapons cWep = c.getWeapon();
-
-		double cAtk = (c.getPrepared() && choice.equals("attack")) ? c.getAtk() * PREPARE_MOD : c.getAtk(); // Calculate
-																											// damage if
-																											// player
-																											// prepared
-																											// last turn
-		cAtk = (c.getHasDefended() && choice.equals("attack")) ? cAtk * COUNTER_MOD : cAtk; // Calculate damage if
-																							// player defended last turn
-		cAtk = cAtk * cWep.getAtk();
-
-		double cDef = (c.getPrepared() && choice.equals("defend")) ? c.getDef() * PREPARE_MOD : c.getDef(); // Calculate
-																											// defense
-																											// if player
-																											// prepared
-																											// last turn
-		cDef = (c.getHasDefended() && choice.equals("defend")) ? 0 : cDef; // If player already defended last turn,
-																			// defense fails
-		cDef = (choice.equals("defend")) ? cDef * DEFEND_MOD : cDef; // Defense modifier
-
 		Weapons eWep = e.getWeapon();
 
-		int enemyChoice = new Random().nextInt(3);
+		// Calculate damage is player prepared last turn
+		double cAtk = (c.getPrepared() && choice.equals("attack")) ? c.getAtk() * PREPARE_MOD : c.getAtk();
 
-		double eAtk = (e.getPrepared() && enemyChoice == 0) ? e.getAtk() * PREPARE_MOD : e.getAtk(); // Calculate damage
-																										// if player
-																										// prepared last
-																										// turn
-		eAtk = (e.getHasDefended() && enemyChoice == 0) ? eAtk * COUNTER_MOD : eAtk; // Calculate damage if player
-																						// defended last turn
+		// Calculate damage if player defended last turn
+		cAtk = (c.getHasDefended() && choice.equals("attack")) ? cAtk * COUNTER_MOD : cAtk;
+		cAtk = cAtk * cWep.getAtk();
+
+		// Calculate defense if player prepared last turn
+		double cDef = (c.getPrepared() && choice.equals("defend")) ? c.getDef() * PREPARE_MOD : c.getDef();
+
+		// If player already defended last turn, defense fails
+		cDef = (c.getHasDefended() && choice.equals("defend")) ? 0 : cDef;
+		cDef = (choice.equals("defend")) ? cDef * DEFEND_MOD : cDef; // Defense modifier
+
+		// Calculate damage if enemy prepared last turn
+		double eAtk = (e.getPrepared() && enemyChoice == 0) ? e.getAtk() * PREPARE_MOD : e.getAtk();
+
+		// Calculate damage if enemy prepared last turn
+		eAtk = (e.getHasDefended() && enemyChoice == 0) ? eAtk * COUNTER_MOD : eAtk;
 		eAtk = eAtk * eWep.getAtk();
 
-		double eDef = (e.getPrepared() && enemyChoice == 1) ? e.getDef() * PREPARE_MOD : e.getDef(); // Calculate
-																										// defense if
-																										// player
-																										// prepared last
-																										// turn
-		eDef = (e.getHasDefended() && enemyChoice == 1) ? 0 : eDef; // If player already defended last turn, defense
-																	// fails
+		// Calulcate defense if enemy prepared last turn
+		double eDef = (e.getPrepared() && enemyChoice == 1) ? e.getDef() * PREPARE_MOD : e.getDef();
+
+		// Defense fail check
+		eDef = (e.getHasDefended() && enemyChoice == 1) ? 0 : eDef;
 		eDef = (enemyChoice == 1) ? eDef * DEFEND_MOD : eDef; // Defense modifier
 
 		// Calculate damage if either attacks
@@ -970,6 +979,7 @@ public class InteractiveHGCommands extends Commands {
 				e.setHasDefended(false);
 				e.setPrepared(false);
 
+				// Compares speed and subtracts health from whomever is faster
 				if (c.getSpd() > e.getSpd()) {
 
 					e.setHP((int) Math.round(e.getHP() - edamage < 0 ? 0 : e.getHP() - edamage));
@@ -1060,6 +1070,10 @@ public class InteractiveHGCommands extends Commands {
 
 		// ---------------------- ADD ABILITIES ----------------------
 
+	}
+
+	public void activateAbility(Characters c) {
+		c.setInAbility(true);
 	}
 
 	private boolean checkEncounterEnemy(int[] nextPos, Characters c) {
