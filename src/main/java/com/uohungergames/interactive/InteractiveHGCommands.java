@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
@@ -45,10 +46,55 @@ public class InteractiveHGCommands extends Commands {
 
 	public void test(MessageReceivedEvent event) {
 
-		createCharacterList();
-		createLockedChannels(event);
-		generateMap(500);
-		viewMap(event);
+		Category c;
+
+		event.getGuild().createCategory("Interactive HG").queue();
+
+		try {
+			Thread.sleep(1500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		c = event.getGuild().getCategoriesByName("Interactive HG", true).get(0);
+
+		c.createTextChannel("IHG General")
+				.addPermissionOverride(event.getGuild().getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
+				.queue();
+
+		try {
+			Thread.sleep(1500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		TextChannel textChannel = event.getGuild().getCategoriesByName("Interactive HG", true).get(0).getTextChannels()
+				.get(0);
+
+		EmbedBuilder eb = new EmbedBuilder();
+		eb.setTitle("Welcome to the Interactive Hunger Games!", null);
+		eb.setColor(Color.orange);
+		eb.setDescription(
+				"In this game, you and your team must make decisions to ensure your survival and be the last one standing. If you have what it takes, then react to this message.");
+
+		textChannel.sendMessage(eb.build()).complete().addReaction("U+2705").queue();
+
+		try {
+			Thread.sleep(1500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		List<Message> msg = textChannel.getHistory().getRetrievedHistory();
+
+		try {
+			Thread.sleep(1500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		// MessageReaction.ReactionEmote readyEmote =
+		// textChannel.getHistory().getRetrievedHistory().get(0).getReactionByUnicode("U+2705");
+		System.out.println(msg);
 
 	}
 
