@@ -7,7 +7,12 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
@@ -16,7 +21,10 @@ import com.uohungergames.original.Player;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Category;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public class InteractiveHGCommands extends Commands {
@@ -28,6 +36,13 @@ public class InteractiveHGCommands extends Commands {
 	private int[][] treasureMap;
 	private int[][] enemyMap;
 	private Characters[][] characterMap;
+
+	private static final double PREPARE_MOD = 1.4;
+	private static final double COUNTER_MOD = 1.2;
+	private static final double DEFEND_MOD = 1.5;
+
+	private static final double ARMOR_WEAK_MOD = 1.3;
+	private static final double ARMOR_STRONG_MOD = 0.7;
 
 	public void test(MessageReceivedEvent event) {
 
@@ -53,12 +68,14 @@ public class InteractiveHGCommands extends Commands {
 			e.printStackTrace();
 		}
 
-		TextChannel textChannel = event.getGuild().getCategoriesByName("Interactive HG", true).get(0).getTextChannels().get(0);
+		TextChannel textChannel = event.getGuild().getCategoriesByName("Interactive HG", true).get(0).getTextChannels()
+				.get(0);
 
 		EmbedBuilder eb = new EmbedBuilder();
 		eb.setTitle("Welcome to the Interactive Hunger Games!", null);
 		eb.setColor(Color.orange);
-		eb.setDescription("In this game, you and your team must make decisions to ensure your survival and be the last one standing. If you have what it takes, then react to this message.");
+		eb.setDescription(
+				"In this game, you and your team must make decisions to ensure your survival and be the last one standing. If you have what it takes, then react to this message.");
 
 		textChannel.sendMessage(eb.build()).complete().addReaction("U+2705").queue();
 
@@ -67,7 +84,7 @@ public class InteractiveHGCommands extends Commands {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
+
 		List<Message> msg = textChannel.getHistory().getRetrievedHistory();
 
 		try {
@@ -75,12 +92,9 @@ public class InteractiveHGCommands extends Commands {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		//MessageReaction.ReactionEmote readyEmote = textChannel.getHistory().getRetrievedHistory().get(0).getReactionByUnicode("U+2705");
+		// MessageReaction.ReactionEmote readyEmote =
+		// textChannel.getHistory().getRetrievedHistory().get(0).getReactionByUnicode("U+2705");
 		System.out.println(msg);
-
-		//createCharacterList();
-		//createLockedChannels(event);
-		//generateMap(500);
 
 	}
 
@@ -204,7 +218,7 @@ public class InteractiveHGCommands extends Commands {
 
 		eb.setColor(Color.CYAN);
 
-		eb.addField("HP: ", String.valueOf(character.getHP()), true);
+		eb.addField("Level: ", String.valueOf(character.getLevel()), true);
 		eb.addField("Items: ", character.getItemList().toString(), true);
 
 		eb.addField("Ability: ", character.getAbility().toString(), true);
@@ -246,6 +260,25 @@ public class InteractiveHGCommands extends Commands {
 
 	}
 
+	public void viewMap(MessageReceivedEvent event) {
+
+		EmbedBuilder eb = new EmbedBuilder();
+		eb.setColor(Color.cyan);
+
+		ByteArrayOutputStream s = new ByteArrayOutputStream();
+
+		try {
+			ImageIO.write(generateMapImage(false), "png", s);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		eb.setImage("attachment://map.png");
+
+		event.getChannel().sendFile(s.toByteArray(), "map.png").embed(eb.build()).queue();
+
+	}
+
 	private BufferedImage generateStatsImg(Characters c) {
 
 		try {
@@ -259,6 +292,7 @@ public class InteractiveHGCommands extends Commands {
 			int hp = c.getHP();
 			int atk = c.getAtk();
 			int def = c.getDef();
+			int spd = c.getSpd();
 			int cool = c.getCool();
 
 			// Set font
@@ -285,28 +319,31 @@ public class InteractiveHGCommands extends Commands {
 
 			// Draw empty bars
 			g2d.setColor(emptyBar);
-			g2d.fillRoundRect(116, 6, width, 21, arcWidth, arcHeight);
-			g2d.fillRoundRect(116, 48, width, 21, arcWidth, arcHeight);
-			g2d.fillRoundRect(116, 90, width, 21, arcWidth, arcHeight);
-			g2d.fillRoundRect(116, 132, width, 21, arcWidth, arcHeight);
+			g2d.fillRoundRect(116, 6, width, 21, arcWidth, arcHeight); // hp
+			g2d.fillRoundRect(116, 48, width, 21, arcWidth, arcHeight); // atk
+			g2d.fillRoundRect(116, 90, width, 21, arcWidth, arcHeight); // def
+			g2d.fillRoundRect(116, 132, width, 21, arcWidth, arcHeight); // spd
+			g2d.fillRoundRect(116, 174, width, 21, arcWidth, arcHeight); // cooldown
 
 			// Draw filled bars
 			g2d.setColor(fillBar);
 			g2d.fillRoundRect(116, 6, barLength(hp), 21, arcWidth, arcHeight);
 			g2d.fillRoundRect(116, 48, barLength(atk), 21, arcWidth, arcHeight);
 			g2d.fillRoundRect(116, 90, barLength(def), 21, arcWidth, arcHeight);
+			g2d.fillRoundRect(116, 132, barLength(spd), 21, arcWidth, arcHeight);
 
 			g2d.setColor(coolBar);
-			g2d.fillRoundRect(116, 132, barLength(cool), 21, arcWidth, arcHeight);
+			g2d.fillRoundRect(116, 174, barLength(cool), 21, arcWidth, arcHeight);
 
 			// Draw stat numbers
 			g2d.setColor(text);
 			g2d.drawString(String.valueOf(hp), fontPlacement(g2d, hp), 6 + textHeight);
 			g2d.drawString(String.valueOf(atk), fontPlacement(g2d, atk), 48 + textHeight);
 			g2d.drawString(String.valueOf(def), fontPlacement(g2d, def), 90 + textHeight);
+			g2d.drawString(String.valueOf(spd), fontPlacement(g2d, spd), 132 + textHeight);
 
 			g2d.setColor(coolText);
-			g2d.drawString(String.valueOf(cool), fontPlacement(g2d, cool), 132 + textHeight);
+			g2d.drawString(String.valueOf(cool), fontPlacement(g2d, cool), 174 + textHeight);
 
 			g2d.dispose();
 
@@ -721,8 +758,11 @@ public class InteractiveHGCommands extends Commands {
 				else if (posy > mapSize - 1)
 					posy = mapSize - 1;
 
-				if (characterMap[posy][posx] != null)
-					return true;
+				if (characterMap[posy][posx] != null) {
+					if (characterMap[posy][posx].isInAbility() != true
+							|| characterMap[posy][posx].getAbility() != Abilities.INVISIBILITY)
+						return true;
+				}
 
 			}
 
@@ -732,65 +772,354 @@ public class InteractiveHGCommands extends Commands {
 
 	public void battleStep(Characters c1, Characters c2, String choice1, String choice2) {
 
-		int c1atk = c1.getAtk();
-		int c1def = c1.getDef();
+		// Get weapons
 		Weapons c1wep = c1.getWeapon();
-
-		int c2atk = c2.getAtk();
-		int c2def = c2.getDef();
 		Weapons c2wep = c2.getWeapon();
 
+		// Attack prepare
+		double c1atk = (c1.getPrepared() && choice1.equals("attack")) ? c1.getAtk() * PREPARE_MOD : c1.getAtk();
+
+		// Calculate damage if player defended
+		c1atk = (c1.getHasDefended() && choice1.equals("attack")) ? c1atk * COUNTER_MOD : c1atk;
+		c1atk = c1atk * c1wep.getAtk();
+
+		// Defense prepare
+		double c1def = (c1.getPrepared() && choice1.equals("defend")) ? c1.getDef() * PREPARE_MOD : c1.getDef();
+
+		// Defense fail
+		c1def = (c1.getHasDefended() && choice1.equals("defend")) ? 0 : c1def;
+		c1def = (choice1.equals("defend")) ? c1def * DEFEND_MOD : c1def; // Defense modifier
+
+		// Attack prepare
+		double c2atk = (c2.getPrepared() && choice2.equals("attack")) ? c2.getAtk() * PREPARE_MOD : c2.getAtk();
+
+		// Defend damage
+		c2atk = (c2.getHasDefended() && choice2.equals("attack")) ? c2atk * COUNTER_MOD : c2atk;
+		c2atk = c2atk * c2wep.getAtk();
+
+		// Defense prepare
+		double c2def = (c2.getPrepared() && choice2.equals("defend")) ? c2.getDef() * PREPARE_MOD : c2.getDef();
+
+		// Defense fail
+		c2def = (c2.getHasDefended() && choice2.equals("defend")) ? 0 : c2def;
+		c2def = (choice2.equals("defend")) ? c2def * DEFEND_MOD : c2def; // Defense modifier
+
 		// Calculate damage if either attacks
-		double c1damage = ((c2atk * c2wep.getAtk()) - c1def) < 0 ? 0 : ((c2atk * c2wep.getAtk()) - c1def);
-		double c2damage = ((c1atk * c1wep.getAtk()) - c2def) < 0 ? 0 : ((c1atk * c1wep.getAtk()) - c2def);
+		double c1damage = c2atk - c1def;
+		double c2damage = c1atk - c2def;
 
 		// Calculate damage bonus with armor
-		if (c1wep.getType().equals("Piercing"))
-			c1damage *= (c2.getArmor() == Armor.LIGHT) ? 1.3 : (c2.getArmor() == Armor.HEAVY) ? 0.7 : 1;
-		else if (c1wep.getType().equals("Bludgeoning"))
-			c1damage *= (c2.getArmor() == Armor.LIGHT) ? 0.7 : (c2.getArmor() == Armor.HEAVY) ? 1.3 : 1;
-
 		if (c2wep.getType().equals("Piercing"))
-			c2damage *= (c1.getArmor() == Armor.LIGHT) ? 1.3 : (c1.getArmor() == Armor.HEAVY) ? 0.7 : 1;
+			c1damage *= (c1.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (c1.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
 		else if (c2wep.getType().equals("Bludgeoning"))
-			c2damage *= (c1.getArmor() == Armor.LIGHT) ? 0.7 : (c1.getArmor() == Armor.HEAVY) ? 1.3 : 1;
+			c1damage *= (c1.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (c1.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
+
+		if (c1wep.getType().equals("Piercing"))
+			c2damage *= (c2.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (c2.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
+		else if (c1wep.getType().equals("Bludgeoning"))
+			c2damage *= (c2.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (c2.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
 
 		switch (choice1) {
 
 		case "attack":
 
+			c1.setHasDefended(false);
+			c1.setPrepared(false);
+
 			if (choice2.equals("attack")) {
 
-				// Both take damage
-				c1.setHP(c1.getHP() - (int) Math.round(c1damage));
-				c2.setHP(c2.getHP() - (int) Math.round(c2damage));
+				c2.setHasDefended(false);
+				c2.setPrepared(false);
+
+				// Compare speeds and apply damage to the slower one
+				if (c1.getSpd() > c2.getSpd()) {
+
+					c2.setHP((int) Math.round(c2.getHP() - c2damage < 0 ? 0 : c2.getHP() - c2damage));
+
+					if (c2.getHP() == 0)
+						break;
+					else
+						c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+				} else if (c2.getSpd() > c1.getSpd()) {
+
+					c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+					if (c1.getHP() == 0)
+						break;
+					else
+						c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
+
+				} else {
+
+					c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+					c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
+
+				}
 
 			} else if (choice2.equals("defend")) {
 
-				c2.setHP(c2.getHP() - (int) Math.round(
-						(c1atk * c1wep.getAtk() - (c2def * 1.5)) < 0 ? 0 : (c1atk * c1wep.getAtk() - (c2def * 1.5))));
+				c2.setHasDefended(true);
+				c2.setPrepared(false);
+				c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
+
+			} else if (choice2.equals("prepare")) {
+
+				c2.setPrepared(true);
+				c2.setHasDefended(false);
+				c2.setHP((int) Math.round(c1.getHP() - c2damage < 0 ? 0 : c1.getHP() - c2damage));
 
 			}
-
-			// ------------------ADD ABILITY--------------------
 
 			break;
 
 		case "defend":
 
+			c1.setPrepared(false);
+
 			if (choice2.equals("attack")) {
 
-				c1.setHP(c1.getHP() - (int) Math.round(
-						(c2atk * c2wep.getAtk() - (c1def * 1.5)) < 0 ? 0 : (c2atk * c2wep.getAtk() - (c1def * 1.5))));
+				c1.setHasDefended(true);
+
+				c2.setHasDefended(false);
+				c2.setPrepared(false);
+
+				c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+			} else if (choice2.equals("prepare")) {
+
+				c1.setHasDefended(false);
+
+				c2.setHasDefended(false);
+				c2.setPrepared(true);
 
 			}
 
-			// ---------------------ADD ABILITY-----------------
+			break;
+
+		case "prepare":
+
+			c1.setHasDefended(false);
+			c1.setPrepared(true);
+
+			if (choice2.equals("attack")) {
+
+				c2.setHasDefended(false);
+				c2.setPrepared(false);
+
+				c1.setHP((int) Math.round(c1.getHP() - c1damage < 0 ? 0 : c1.getHP() - c1damage));
+
+			} else if (choice2.equals("prepare")) {
+
+				c2.setHasDefended(false);
+				c2.setPrepared(true);
+
+			}
 
 			break;
 
 		}
 
+		// ---------------------- ADD ABILITIES ----------------------
+
+	}
+
+	public void battleStep(Characters c, Enemy e, String choice) {
+
+		int randNum = new Random().nextInt(101);
+		int enemyChoice;
+
+		// Calculate likelyhood of attacking/defending
+		double initialAttack = 72 - 0.2 * c.getHP();
+		double initialDefend = 90 - initialAttack;
+
+		int finalDefend = (int) Math.round((108 - initialAttack) - (0.2 * e.getHP()));
+		int finalAttack = (int) Math.round(initialAttack - (finalDefend - initialDefend));
+
+		if (e.getPrepared())
+			randNum += 10;
+
+		// Choose enemy action based on hp levels
+		if ((randNum -= 10) < 0) {
+			enemyChoice = 2;
+		} else if ((randNum -= Math.min(finalDefend, finalAttack)) < 0) {
+
+			if (Math.min(finalDefend, finalAttack) == finalAttack)
+				enemyChoice = 0;
+			else
+				enemyChoice = 1;
+
+		} else {
+
+			if (Math.max(finalDefend, finalAttack) == finalAttack)
+				enemyChoice = 0;
+			else
+				enemyChoice = 1;
+
+		}
+
+		// Get weapons
+		Weapons cWep = c.getWeapon();
+		Weapons eWep = e.getWeapon();
+
+		// Calculate damage is player prepared last turn
+		double cAtk = (c.getPrepared() && choice.equals("attack")) ? c.getAtk() * PREPARE_MOD : c.getAtk();
+
+		// Calculate damage if player defended last turn
+		cAtk = (c.getHasDefended() && choice.equals("attack")) ? cAtk * COUNTER_MOD : cAtk;
+		cAtk = cAtk * cWep.getAtk();
+
+		// Calculate defense if player prepared last turn
+		double cDef = (c.getPrepared() && choice.equals("defend")) ? c.getDef() * PREPARE_MOD : c.getDef();
+
+		// If player already defended last turn, defense fails
+		cDef = (c.getHasDefended() && choice.equals("defend")) ? 0 : cDef;
+		cDef = (choice.equals("defend")) ? cDef * DEFEND_MOD : cDef; // Defense modifier
+
+		// Calculate damage if enemy prepared last turn
+		double eAtk = (e.getPrepared() && enemyChoice == 0) ? e.getAtk() * PREPARE_MOD : e.getAtk();
+
+		// Calculate damage if enemy prepared last turn
+		eAtk = (e.getHasDefended() && enemyChoice == 0) ? eAtk * COUNTER_MOD : eAtk;
+		eAtk = eAtk * eWep.getAtk();
+
+		// Calulcate defense if enemy prepared last turn
+		double eDef = (e.getPrepared() && enemyChoice == 1) ? e.getDef() * PREPARE_MOD : e.getDef();
+
+		// Defense fail check
+		eDef = (e.getHasDefended() && enemyChoice == 1) ? 0 : eDef;
+		eDef = (enemyChoice == 1) ? eDef * DEFEND_MOD : eDef; // Defense modifier
+
+		// Calculate damage if either attacks
+		double cdamage = eAtk - cDef;
+		double edamage = cAtk - eDef;
+
+		// Calculate damage bonus with armor
+		if (eWep.getType().equals("Piercing"))
+			cdamage *= (c.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (c.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
+		else if (eWep.getType().equals("Bludgeoning"))
+			cdamage *= (c.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (c.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
+
+		if (cWep.getType().equals("Piercing"))
+			edamage *= (e.getArmor() == Armor.LIGHT) ? ARMOR_WEAK_MOD
+					: (e.getArmor() == Armor.HEAVY) ? ARMOR_STRONG_MOD : 1;
+		else if (cWep.getType().equals("Bludgeoning"))
+			edamage *= (e.getArmor() == Armor.LIGHT) ? ARMOR_STRONG_MOD
+					: (e.getArmor() == Armor.HEAVY) ? ARMOR_WEAK_MOD : 1;
+
+		switch (choice) {
+
+		case "attack":
+
+			c.setHasDefended(false);
+			c.setPrepared(false);
+
+			if (enemyChoice == 0) {
+
+				e.setHasDefended(false);
+				e.setPrepared(false);
+
+				// Compares speed and subtracts health from whomever is faster
+				if (c.getSpd() > e.getSpd()) {
+
+					e.setHP((int) Math.round(e.getHP() - edamage < 0 ? 0 : e.getHP() - edamage));
+
+					if (e.getHP() == 0)
+						break;
+					else
+						c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+				} else if (e.getSpd() > c.getSpd()) {
+
+					c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+					if (c.getHP() == 0)
+						break;
+					else
+						e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+				} else {
+
+					c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+					e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+				}
+
+			} else if (enemyChoice == 1) {
+
+				e.setHasDefended(true);
+				e.setPrepared(false);
+				e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+			} else if (enemyChoice == 2) {
+
+				e.setPrepared(true);
+				e.setHasDefended(false);
+				e.setHP((int) Math.round(c.getHP() - edamage < 0 ? 0 : c.getHP() - edamage));
+
+			}
+
+			break;
+
+		case "defend":
+
+			c.setPrepared(false);
+
+			if (enemyChoice == 0) {
+
+				c.setHasDefended(true);
+
+				e.setHasDefended(false);
+				e.setPrepared(false);
+
+				c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+			} else if (enemyChoice == 2) {
+
+				c.setHasDefended(false);
+
+				e.setHasDefended(false);
+				e.setPrepared(true);
+
+			}
+
+			break;
+
+		case "prepare":
+
+			c.setHasDefended(false);
+			c.setPrepared(true);
+
+			if (enemyChoice == 0) {
+
+				e.setHasDefended(false);
+				e.setPrepared(false);
+
+				c.setHP((int) Math.round(c.getHP() - cdamage < 0 ? 0 : c.getHP() - cdamage));
+
+			} else if (enemyChoice == 2) {
+
+				e.setHasDefended(false);
+				e.setPrepared(true);
+
+			}
+
+			break;
+
+		}
+
+		// ---------------------- ADD ABILITIES ----------------------
+
+	}
+
+	public void activateAbility(Characters c) {
+		c.setInAbility(true);
 	}
 
 	private boolean checkEncounterEnemy(int[] nextPos, Characters c) {
