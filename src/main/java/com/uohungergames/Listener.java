@@ -5,8 +5,10 @@ import java.io.IOException;
 import com.uohungergames.interactive.InteractiveHGCommands;
 import com.uohungergames.original.HGCommands;
 
+import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -41,6 +43,25 @@ public class Listener extends ListenerAdapter {
 		if (event.getMessage().getContentRaw().split(" ")[0].equals("ihg!test")) {
 			ihgCommands.test(event);
 			event.getMessage().addReaction("U+2705").queue();
+		}
+
+		if (event.getMessage().getContentRaw().split(" ")[0].equals("ihg!deletelockedchannels")) {
+			if (event.getGuild().getCategoriesByName("Interactive HG", true).size() == 0)
+				return;
+
+			Category c = event.getGuild().getCategoriesByName("Interactive HG", true).get(0);
+
+			for (TextChannel tc : c.getTextChannels())
+				tc.delete().queue();
+
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			c.delete().queue();
 		}
 
 		// Add ideas
